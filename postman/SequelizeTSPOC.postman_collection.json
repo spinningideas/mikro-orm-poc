@@ -1,0 +1,89 @@
+{
+	"info": {
+		"_postman_id": "0afdf63b-d186-42cb-b41e-2366807cab26",
+		"name": "SequelizeTSPOC",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "8908437"
+	},
+	"item": [
+		{
+			"name": "continents",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/continents",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"continents"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "countries",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/countries/NA",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"countries",
+						"NA"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "countries-paged",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/countries/NA",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"countries",
+						"NA"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "country",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/country/US",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"country",
+						"US"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
