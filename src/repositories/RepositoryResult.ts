@@ -16,7 +16,7 @@ type RepositoryResult<DataType> = Promise<
  */
 export class Result<DataType, ErrorType> {
   public success: boolean;
-  private error: ErrorType;
+  private errors: ErrorType | string;
   private data: DataType;
 
   private constructor(success: boolean, data: DataType, error: ErrorType) {
@@ -28,7 +28,7 @@ export class Result<DataType, ErrorType> {
 
     this.success = success;
     this.data = data;
-    this.error = error;
+    this.errors = error;
   }
 
   public static ok<DataType>(data: DataType): Result<DataType, undefined> {
@@ -41,11 +41,11 @@ export class Result<DataType, ErrorType> {
     return new Result(false, undefined, error);
   }
 
-  public getError(): ErrorType {
-    if (!this.error) {
+  public getErrors(): ErrorType | string {
+    if (!this.errors) {
       throw new Error("Result does not contain an error");
     }
-    return this.error;
+    return this.errors;
   }
 
   public getData(): DataType {

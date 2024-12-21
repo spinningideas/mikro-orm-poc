@@ -3,7 +3,6 @@ import {
   EntityData,
   EntityRepository,
   FilterQuery,
-  FindOptions,
   QueryOrderMap,
 } from "@mikro-orm/core";
 import { Criteria } from "./Criteria";
@@ -19,17 +18,13 @@ export class BaseRepository<T extends AnyEntity<T>> extends EntityRepository<T> 
   async findOneWhere(criteria: Criteria): Promise<RepositoryResult<T>> {
     try {
       const result = await this.findOne(criteria as FilterQuery<T>);
-      return {
-        success: true,
-        data: result,
-        errors: undefined,
-      };
+      return new RepositoryResult<T>(true, result, undefined);
     } catch (error) {
-      return {
-        success: false,
-        data: undefined,
-        errors: error instanceof Error ? error.message : "Unknown error",
-      };
+      return new RepositoryResult<T>(
+        false,
+        undefined,
+        error instanceof Error ? error : new Error("Unknown error")
+      );
     }
   }
 

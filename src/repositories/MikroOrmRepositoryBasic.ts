@@ -78,8 +78,11 @@ export class MikroOrmRepositoryBasic<
   /**
    * Create a new record
    */
-  async create(entity: EntityData<T>): Promise<T> {
-    const newEntity = this.create(entity);
+  async create<Convert extends boolean = false>(
+    data: EntityData<T>,
+    options?: { convert?: Convert }
+  ): Promise<T> {
+    const newEntity = super.create(data, options);
     await this.orm.em.persistAndFlush(newEntity);
     return newEntity;
   }
@@ -101,7 +104,7 @@ export class MikroOrmRepositoryBasic<
    */
   async updateWhere(
     criteria: FilterQuery<T>,
-    entity: Partial<EntityData<T>>
+    entity: EntityData<T>
   ): Promise<T> {
     const existingEntity = await this.findOne(criteria);
     if (!existingEntity) {
@@ -120,3 +123,5 @@ export class MikroOrmRepositoryBasic<
     return this.nativeDelete(criteria);
   }
 }
+
+export default MikroOrmRepositoryBasic;

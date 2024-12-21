@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "0afdf63b-d186-42cb-b41e-2366807cab26",
-		"name": "SequelizeTSPOC",
+		"name": "MikroORMPOC",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "8908437"
 	},

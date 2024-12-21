@@ -7,7 +7,7 @@
  */
 export class RepositoryResultPaged<DataType, ErrorType> {
   public success: boolean;
-  public error: ErrorType;
+  public errors: ErrorType | string;
   public data: DataType;
   public currentPage: number;
   public totalRows: number;
@@ -29,7 +29,7 @@ export class RepositoryResultPaged<DataType, ErrorType> {
 
     this.success = success;
     this.data = data;
-    this.error = error;
+    this.errors = error;
     this.currentPage = currentPage;
     this.totalRows = totalRows;
     this.totalItems = totalItems;
@@ -67,11 +67,11 @@ export class RepositoryResultPaged<DataType, ErrorType> {
     );
   }
 
-  public getError(): ErrorType {
-    if (!this.error) {
+  public getErrors(): ErrorType | string {
+    if (!this.errors) {
       throw new Error("Result does not contain an error");
     }
-    return this.error;
+    return this.errors;
   }
 
   public getData(): DataType {
