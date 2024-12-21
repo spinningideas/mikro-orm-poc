@@ -2,10 +2,16 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
-import Database from "./Database";
-import runMigrations from "./runMigrations";
-import runSeeders from "./seeders/runSeeders";
-import MikroOrmRepositoryBasic from "./repositories/MikroOrmRepositoryBasic";
+// database setup/mgmt
+import { MikroORM } from "@mikro-orm/core";
+import Database from "./db/Database";
+import runMigrations from "./db/migrations/runMigrations";
+import runSeeders from "./db/seeders/runSeeders";
+import MikroOrmBaseRepository from "./db/repositories/MikroOrmBaseRepository";
+// db models
+import Continent from "./db/models/Continent";
+import Country from "./db/models/Country";
+import { PostgreSqlDriver } from "@mikro-orm/postgresql";
 
 const app: Express = express();
 const PORT = process.env.PORT || 5001;
@@ -14,12 +20,12 @@ const HOST = process.env.HOST || "localhost";
 // Setup app
 app.use(cors());
 
-const db = Database;
+let db: MikroORM<PostgreSqlDriver>;
 
 // Setup routes
 //==continents=======================
 app.get("/continents", async (req: Request, res: Response) => {
-  const repo = MikroOrmRepositoryBasic(db, "Continent");
+  const repo = new MikroOrmBaseRepository<Continent>(db);
   return await repo.findAll().then((continents) => {
     res.json(continents);
   });
@@ -27,15 +33,26 @@ app.get("/continents", async (req: Request, res: Response) => {
 //==countries==============================
 app.get("/countries/:continentCode", async (req: Request, res: Response) => {
   let continentCode = req.params.continentCode;
-  const repoCountries = MikroOrmRepositoryBasic(db, "Country");
+  const repoContinents = new MikroOrmBaseRepository<Continent>(db);
+  const repoCountries = new MikroOrmBaseRepository<Country>(db);
+
+  const continent = await repoContinents.findOneWhere({
+    continentCode: continentCode,
+  });
+  if (!continent) {
+    res.status(404).json({
+      message: "Continent not found with continentCode: " + continentCode,
+    });
+  }
+
   return await repoCountries
     .findWhere({
-      continentCode: continentCode,
+      continentId: continent.continentId,
     })
     .then((results) => {
       if (!results) {
         res.status(404).json({
-          message: "countries not found with continentCode: " + continentCode,
+          message: "Countries not found with continentCode: " + continentCode,
         });
       } else {
         res.json(results);
@@ -52,8 +69,8 @@ app.get(
     const { orderBy } = req.params;
     const { orderDesc } = req.params;
 
-    const repoContinents = MikroOrmRepositoryBasic(db, "Continent");
-    const repoCountries = MikroOrmRepositoryBasic(db, "Country");
+    const repoContinents = new MikroOrmBaseRepository<Continent>(db);
+    const repoCountries = new MikroOrmBaseRepository<Country>(db);
 
     const continent = await repoContinents.findOneWhere({
       continentCode: continentCode,
@@ -67,7 +84,7 @@ app.get(
         { continentId: continent.continentId },
         currentPageNumber,
         currentPageSize,
-        orderBy,
+        orderBy as keyof Country,
         orderDesc
       )
       .then((results) => {
@@ -84,7 +101,7 @@ app.get(
 
 app.get("/country/:countryCode", async (req: Request, res: Response) => {
   let countryCode = req.params.countryCode;
-  const repoCountry = MikroOrmRepositoryBasic(db, "Country");
+  const repoCountry = new MikroOrmBaseRepository<Country>(db);
   return await repoCountry
     .findOneWhere({ countryCode: countryCode })
     .then((results) => {
@@ -102,7 +119,9 @@ app.get("/country/:countryCode", async (req: Request, res: Response) => {
 async function configureDatabase() {
   try {
     let seedersRunSuccessfully = false;
-    console.log(`Running database migrations`);
+    console.log(`Initializing database`);
+    db = await Database.init();
+    console.log(`Database initialized. Running database migrations`);
     const migrationsRun = await runMigrations(db);
     console.log("database migrations setup ok?:", migrationsRun);
     if (migrationsRun) {

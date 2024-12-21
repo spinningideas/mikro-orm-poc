@@ -1,6 +1,6 @@
 /**
  * @summary Promise of Generic result from a given repository operation
- * that allows decoupling from Sequelize Models directly
+ * that allows decoupling from database Models directly
  * within persistence related methods.
  */
 type RepositoryResult<DataType> = Promise<
@@ -9,7 +9,7 @@ type RepositoryResult<DataType> = Promise<
 
 /**
  * @summary Generic result for repositories that allows decoupling
- * from Sequelize Models directly within persistence related methods.
+ * from database Models directly within persistence related methods.
  * Returns indicator if the operation was successful in the boolean "success".
  * Returns the actual payload of data in "data" having type specified in DataType.
  * Returns any errors in "errors" having type specified in ErrorType.

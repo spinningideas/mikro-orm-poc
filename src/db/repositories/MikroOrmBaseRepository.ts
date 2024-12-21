@@ -1,17 +1,20 @@
 import {
   AnyEntity,
   EntityData,
+  EntityManager,
   EntityRepository,
   FilterQuery,
   FindOptions,
   MikroORM,
   QueryOrderMap,
+  RequiredEntityData,
+  UpsertOptions,
 } from "@mikro-orm/core";
 
-export class MikroOrmRepositoryBasic<
+export class MikroOrmBaseRepository<
   T extends AnyEntity<T>
 > extends EntityRepository<T> {
-  constructor(private readonly orm: MikroORM, entity: new () => T) {
+  constructor(private readonly orm: MikroORM, entity?: new () => T) {
     super(orm.em, entity);
   }
 
@@ -78,9 +81,9 @@ export class MikroOrmRepositoryBasic<
   /**
    * Create a new record
    */
-  async create<Convert extends boolean = false>(
+  async createNew<Convert extends boolean = false>(
     data: EntityData<T>,
-    options?: { convert?: Convert }
+    options?: { convert?: Convert; partial: true; manual?: true }
   ): Promise<T> {
     const newEntity = super.create(data, options);
     await this.orm.em.persistAndFlush(newEntity);
@@ -90,12 +93,30 @@ export class MikroOrmRepositoryBasic<
   /**
    * Update or create a record based on criteria
    */
-  async upsert(criteria: FilterQuery<T>, entity: EntityData<T>): Promise<T> {
+  async upsertWhere<Fields extends string = any>(
+    criteria: FilterQuery<T>,
+    entityOrData?: T | EntityData<T>,
+    options?: UpsertOptions<T, Fields>
+  ): Promise<T> {
+    if (!criteria) {
+      throw new Error("criteria must be provided for upsert");
+    }
     const existingEntity = await this.findOne(criteria);
-    if (existingEntity) {
-      return this.updateWhere(criteria, entity);
+    if (!existingEntity) {
+      // Create a new instance of the entity having the required fields
+      const entity = this.create({} as RequiredEntityData<T>);
+      // Then assign the data to it
+      if (entityOrData) {
+        this.orm.em.assign(entity, entityOrData as T);
+      }
+      await this.orm.em.persistAndFlush(entity);
+      return entity;
     } else {
-      return this.create(entity);
+      if (entityOrData) {
+        this.orm.em.assign(existingEntity, entityOrData as T);
+        await this.orm.em.flush();
+      }
+      return existingEntity;
     }
   }
 
@@ -104,14 +125,15 @@ export class MikroOrmRepositoryBasic<
    */
   async updateWhere(
     criteria: FilterQuery<T>,
-    entity: EntityData<T>
+    entity: Partial<T>,
+    options: { partial?: boolean } = { partial: true }
   ): Promise<T> {
     const existingEntity = await this.findOne(criteria);
     if (!existingEntity) {
       throw new Error("Entity not found");
     }
 
-    this.orm.em.assign(existingEntity, entity);
+    this.orm.em.assign(existingEntity, entity as T);
     await this.orm.em.flush();
     return existingEntity;
   }
@@ -122,6 +144,13 @@ export class MikroOrmRepositoryBasic<
   async deleteWhere(criteria: FilterQuery<T>): Promise<number> {
     return this.nativeDelete(criteria);
   }
+
+  /**
+   * Delete record for given entity
+   */
+  delete(entity: AnyEntity): EntityManager {
+    return this.em.remove(entity);
+  }
 }
 
-export default MikroOrmRepositoryBasic;
+export default MikroOrmBaseRepository;

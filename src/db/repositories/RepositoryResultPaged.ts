@@ -1,6 +1,6 @@
 /**
  * @summary Generic paginated result for repositories that allows decoupling
- * from Sequelize Models directly within persistence related methods.
+ * from database Models directly within persistence related methods.
  * Returns indicator if the operation was successful in the boolean "success".
  * Returns the actual payload of data in "data" having type specified in DataType.
  * Returns any errors in "errors" having type specified in ErrorType.

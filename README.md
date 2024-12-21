@@ -105,3 +105,4 @@ npm run cypress:run
 - https://github.com/mikro-orm/mikro-orm
 - https://mikro-orm.io/
 - https://mikro-orm.io/docs/repositories
+- https://mikro-orm.io/docs/migrations  

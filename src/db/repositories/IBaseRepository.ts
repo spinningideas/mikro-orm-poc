@@ -1,6 +1,6 @@
-import { Criteria } from "repositories/Criteria";
-import RepositoryResult from "repositories/RepositoryResult";
-import RepositoryResultPaged from "repositories/RepositoryResultPaged";
+import { Criteria } from "db/repositories/Criteria";
+import RepositoryResult from "db/repositories/RepositoryResult";
+import RepositoryResultPaged from "db/repositories/RepositoryResultPaged";
 
 /**
  * @summary Interface that encapsulates repositories for entities with
