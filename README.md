@@ -49,6 +49,16 @@ Install the required packages via standard command:
 
 `npm install`
 
+### Quick setup
+
+Steps 4, 5 and 6 can be run in one go:
+
+```
+npm run setup
+```
+
+This creates the database schema (`schema:create`), seeds the database (`seed:run`) and starts the app (`dev`). To run each step individually, continue below.
+
 ### 4) Create database schema using MikroORM schema generator
 
 See `mikro-orm.config.ts` for schema configuration.
@@ -76,6 +86,8 @@ OR
 1. `npm run build`
 2. `npm run start`
 
+By default the app listens on http://localhost:5001 (override with the `PORT` and `HOST` env vars). On startup it also runs database migrations and seeders automatically, skipping seeding when data already exists.
+
 NOTE: You can also run and debug the application if using vscode via the launch.json profile and debugging capabilities: https://code.visualstudio.com/docs/editor/debugging
 
 ### 7) Exercise the application via postman OR thunder client
@@ -90,7 +102,7 @@ Use the client of your choice to run the requests to see api data and responses 
 
 #### 7.3 - Run the tests
 
-The tests use [vitest](https://vitest.dev/) with [supertest](https://github.com/ladjs/supertest) and live in the `tests` folder (`api.test.ts`, `pagination.test.ts`, `search.test.ts`). They run migrations and seeders against the database configured in `.env`, so the PostgreSQL server must be running — the express app does NOT need to be started first.
+The tests use [vitest](https://vitest.dev/) with [supertest](https://github.com/ladjs/supertest) and live in the `tests` folder (`api.test.ts`, `pagination.test.ts`, `search.test.ts`, `countryRepository.test.ts`). They run migrations and seeders against the database configured in `.env`, so the PostgreSQL server must be running — the express app does NOT need to be started first.
 
 Run the full test suite once:
 
@@ -131,6 +143,7 @@ POST /countries/search
 ```json
 {
   "searchTerm": "United",
+  "searchField": ["countryName", "capital"],
   "pageNumber": 1,
   "pageSize": 10,
   "sortBy": "countryName",
@@ -138,11 +151,11 @@ POST /countries/search
 }
 ```
 
-The search performs a case-insensitive substring match (`$ilike`) on `countryName` and returns the same paged response shape `{ total, data, pagination }` described above. `pageNumber`, `pageSize`, `sortBy` and `sortByDirection` are optional.
+The search performs a case-insensitive substring match (`$ilike`) across the fields listed in `searchField`, matched with OR semantics, and returns the same paged response shape `{ total, data, pagination }` described above. `searchField` is optional and defaults to `["countryName"]`; `pageNumber`, `pageSize`, `sortBy` and `sortByDirection` are also optional.
 
-At the repository layer, search is provided by `search()` in [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts), which accepts the field name, search term, and optional sort/pagination arguments.
+At the repository layer, search is provided by `search()` in [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts), which accepts a field name or an array of field names, the search term, and optional sort/pagination arguments.
 
-### 8 Inspiration and Read More
+### More Information
 
 - https://github.com/mikro-orm/mikro-orm
 - https://mikro-orm.io/

@@ -13,10 +13,11 @@ import {
 } from "@mikro-orm/core";
 import { Pagination } from "../../types/Pagination";
 import type ApiResponsePaged from "../../types/ApiResponsePaged";
+import type { IBaseRepository } from "./IBaseRepository";
 
-export class MikroOrmBaseRepository<
-  T extends object
-> extends EntityRepository<T> {
+export class MikroOrmBaseRepository<T extends object>
+  extends EntityRepository<T>
+  implements IBaseRepository<T> {
   constructor(private readonly orm: MikroORM, entityName: EntityName<T>) {
     super(orm.em, entityName);
   }
@@ -33,6 +34,13 @@ export class MikroOrmBaseRepository<
    */
   async findWhere(criteria: FilterQuery<T>): Promise<T[]> {
     return this.find(criteria);
+  }
+
+  /**
+   * Count records matching given criteria
+   */
+  async countWhere(criteria: FilterQuery<T>): Promise<number> {
+    return this.count(criteria);
   }
 
   /**
@@ -59,7 +67,9 @@ export class MikroOrmBaseRepository<
       orderDesc.toString().toLowerCase() === "desc";
     const orderDirection = isDesc ? "DESC" : "ASC";
 
-    const options: FindOptions<T> = {
+    // Omit "using" so findAndCount's Using generic defaults to never and
+    // the where parameter resolves to plain FilterQuery<T>
+    const options: Omit<FindOptions<T>, "using"> = {
       limit: pageSize,
       offset,
     };
@@ -100,7 +110,8 @@ export class MikroOrmBaseRepository<
 
   /**
    * Search records by a property value with pagination and sorting
-   * @param parameterName The field name to search on
+   * @param parameterName The field name (or array of field names) to search on;
+   *   multiple fields are matched with OR semantics
    * @param parameterValue The search term / substring
    * @param sortBy The field to sort by (optional)
    * @param order Sort order (DESC / ASC / true / false / 1 / -1) (optional, default ASC)
@@ -108,7 +119,7 @@ export class MikroOrmBaseRepository<
    * @param pageNumber 1-based page number (optional, default 1)
    */
   async search(
-    parameterName: keyof T | string,
+    parameterName: keyof T | string | Array<keyof T | string>,
     parameterValue: string,
     sortBy?: keyof T | string,
     order: boolean | string | number = "ASC",
@@ -132,11 +143,16 @@ export class MikroOrmBaseRepository<
       order.toString().toLowerCase() === "desc";
     const orderDirection = isDesc ? "DESC" : "ASC";
 
+    const fields = Array.isArray(parameterName)
+      ? parameterName
+      : [parameterName];
     const criteria = {
-      [parameterName]: { $ilike: `%${parameterValue}%` },
+      $or: fields.map((field) => ({
+        [field]: { $ilike: `%${parameterValue}%` },
+      })),
     } as FilterQuery<T>;
 
-    const options: FindOptions<T> = {
+    const options: Omit<FindOptions<T>, "using"> = {
       limit: pageSize,
       offset,
     };

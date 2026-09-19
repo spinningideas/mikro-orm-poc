@@ -44,6 +44,7 @@ The examples below show a complete set of type definitions and a practical examp
 ```typescript
 export default interface ApiSearchRequest {
   searchTerm: string;
+  searchField?: string[];
   pageNumber: number;
   pageSize: number;
   sortBy?: string;
@@ -146,6 +147,7 @@ async function fetchPaged<T>(
 // -------------------------------------------------------
 const request: ApiSearchRequest = {
   searchTerm: "widget",
+  searchField: ["name"],
   pageNumber: 1,
   pageSize: 10,
   sortBy: "name",

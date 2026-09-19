@@ -90,6 +90,16 @@ describe("Repository Search Tests", () => {
       );
     });
 
+    it("searches countries across multiple fields with OR matching", async () => {
+      const result = await countryRepo.search(
+        ["countryName", "capital"],
+        "Washington"
+      );
+      expect(result.total).toBe(1);
+      expect(result.data[0].countryName).toBe("United States");
+      expect(result.data[0].countryCode).toBe("US");
+    });
+
     it("searches countries by capital city", async () => {
       const result = await countryRepo.search("capital", "Washington");
       expect(result.total).toBe(1);

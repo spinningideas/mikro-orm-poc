@@ -4,6 +4,7 @@
   "description": "MikroORM typescript ORM Proof Of Concept + Vitest testing",
   "main": "dist/app.js",
   "scripts": {
+    "setup": "npm run schema:create && npm run seed:run && npm run dev",
     "dev": "ts-node-dev --respawn src/app.ts",
     "dev:debug": "ts-node-dev --inspect=localhost:5001 src/app.ts",
     "build": "tsc",

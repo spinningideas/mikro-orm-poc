@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src",
     "rootDir": "./src",
     "lib": ["es6"],
     "module": "NodeNext",

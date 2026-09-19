@@ -8,6 +8,7 @@ import Database from "./db/Database";
 import runMigrations from "./db/migrations/runMigrations";
 import runSeeders from "./db/seeders/runSeeders";
 import MikroOrmBaseRepository from "./db/repositories/MikroOrmBaseRepository";
+import CountryRepository from "./db/repositories/CountryRepository";
 // db models
 import Continent from "./db/models/Continent";
 import Country from "./db/models/Country";
@@ -42,7 +43,7 @@ app.get("/continents", async (req: Request, res: Response) => {
 app.get("/countries/:continentCode", async (req: Request, res: Response) => {
   let continentCode = req.params.continentCode;
   const repoContinents = new MikroOrmBaseRepository<Continent>(db, Continent);
-  const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
+  const repoCountries = new CountryRepository(db);
 
   const continent = await repoContinents.findOneWhere({
     continentCode: continentCode,
@@ -54,9 +55,7 @@ app.get("/countries/:continentCode", async (req: Request, res: Response) => {
   }
 
   return await repoCountries
-    .findWhere({
-      continentId: continent.continentId,
-    })
+    .findByContinentCode(continentCode as string)
     .then((results) => {
       if (!results) {
         res.status(404).json({
@@ -113,8 +112,14 @@ app.get(
 );
 
 app.post("/countries/search", async (req: Request, res: Response) => {
-  const { searchTerm, pageNumber, pageSize, sortBy, sortByDirection } =
-    req.body as ApiSearchRequest;
+  const {
+    searchTerm,
+    searchField,
+    pageNumber,
+    pageSize,
+    sortBy,
+    sortByDirection,
+  } = req.body as ApiSearchRequest;
 
   if (!searchTerm) {
     return res.status(400).json({
@@ -124,7 +129,7 @@ app.post("/countries/search", async (req: Request, res: Response) => {
 
   const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
   const results = await repoCountries.search(
-    "countryName",
+    searchField?.length ? searchField : ["countryName"],
     searchTerm,
     sortBy ?? "countryName",
     sortByDirection ?? "ASC",
