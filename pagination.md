@@ -28,7 +28,7 @@ Paging (or pagination) is the practice of dividing a large result set into small
 
 ## Sources & Further Reading
 
-- **SQL paging patterns (OFFSET vs keyset):** https://use-the-index-luke.com/sql/partial-results/fetch-next-page - Use The Index, Luke - practical guide to efficient pagination in SQL with real query plans.
+- **SQL paging patterns (OFFSET vs keyset):** https://use-the-index-luke.com/sql/partial-results/fetch-next-page - Use this practical guide to efficient pagination in SQL with real query plans.
 - **PostgreSQL LIMIT/OFFSET performance:** https://www.postgresql.org/docs/current/queries-limit.html - official docs covering `LIMIT`, `OFFSET`, and cursor-based approaches.
 - **HTTP API design for pagination:** https://developers.google.com/apis-explorer - Google API design guide covers `pageToken`, `pageSize`, and standard pagination patterns used in production REST APIs.
 - **Web performance & payload size:** https://web.dev/performance/ - Google web performance guidance, including payload budgets and time-to-first-byte.
@@ -71,29 +71,17 @@ export class Pagination {
     this.resultsExist = total > 0;
     this.totalPages = Math.ceil(this.totalResults / this.pageSize);
     this.hasPreviousPage = pageNumber > 1;
-    this.hasNextPage =
-      this.pageSize === 1
-        ? this.totalResults > this.pageSize
-        : this.totalPages > pageNumber;
+    this.hasNextPage = this.totalPages > pageNumber;
   }
 }
 ```
 
-**`ApiResponse<T>`** - generic wrapper for non-paged responses.
+**`ApiResponse<T>`** - generic wrapper for API responses; carries an optional `pagination` field for paged responses.
 
 ```typescript
-export interface ApiResponse<T> {
-  success?: boolean;
-  message?: string;
-  data?: T;
-  status?: number;
-}
-```
+import { Pagination } from "./Pagination";
 
-**`ApiResponsePaged<T>`** - generic wrapper for paged responses; extends the base response with a `pagination` field.
-
-```typescript
-export default interface ApiResponsePaged<T> {
+export default interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data?: T;
@@ -110,8 +98,7 @@ The example below shows a typed fetch helper and a small set of calls demonstrat
 
 ```typescript
 // types.ts  (all definitions above combined)
-import type ApiSearchRequest from "./types";
-import type ApiResponsePaged from "./types";
+import type { ApiSearchRequest, ApiResponse } from "./types";
 
 // -------------------------------------------------------
 // Domain type for this example
@@ -128,7 +115,7 @@ interface Product {
 async function fetchPaged<T>(
   url: string,
   request: ApiSearchRequest,
-): Promise<ApiResponsePaged<T[]>> {
+): Promise<ApiResponse<T[]>> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -139,7 +126,7 @@ async function fetchPaged<T>(
     throw new Error(`HTTP error - status: ${response.status}`);
   }
 
-  return response.json() as Promise<ApiResponsePaged<T[]>>;
+  return response.json() as Promise<ApiResponse<T[]>>;
 }
 
 // -------------------------------------------------------
@@ -221,11 +208,11 @@ console.log(`Fetched ${allProducts.length} products across all pages`);
 
 ### Example: Server-Side Response Shape
 
-Below is a reference showing how a server would construct a properly shaped `ApiResponsePaged` response (e.g. in an Express route handler):
+Below is a reference showing how a server would construct a properly shaped `ApiResponse` response (e.g. in an Express route handler):
 
 ```typescript
 import { Pagination } from "./types";
-import type ApiResponsePaged from "./types";
+import type { ApiResponse } from "./types";
 
 // Simulated route handler
 app.post("/products/search", async (req, res) => {
@@ -239,7 +226,7 @@ app.post("/products/search", async (req, res) => {
     take: pageSize,
   });
 
-  const response: ApiResponsePaged<Product[]> = {
+  const response: ApiResponse<Product[]> = {
     success: true,
     data: products,
     status: 200,

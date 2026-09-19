@@ -12,7 +12,7 @@ import {
   UpsertOptions,
 } from "@mikro-orm/core";
 import { Pagination } from "../../types/Pagination";
-import type ApiResponsePaged from "../../types/ApiResponsePaged";
+import type ApiResponse from "../../types/ApiResponse";
 import type { IBaseRepository } from "./IBaseRepository";
 
 export class MikroOrmBaseRepository<T extends object>
@@ -84,7 +84,7 @@ export class MikroOrmBaseRepository<T extends object>
   }
 
   /**
-   * Paginate query returning standard ApiResponsePaged structure
+   * Paginate query returning standard ApiResponse structure
    */
   async paginate(
     criteria: FilterQuery<T>,
@@ -92,7 +92,7 @@ export class MikroOrmBaseRepository<T extends object>
     pageSize: number = 10,
     orderBy?: keyof T,
     orderDesc: boolean | string = "ASC"
-  ): Promise<ApiResponsePaged<T[]>> {
+  ): Promise<ApiResponse<T[]>> {
     const { data, pagination } = await this.findWherePagedSorted(
       criteria,
       pageNumber,

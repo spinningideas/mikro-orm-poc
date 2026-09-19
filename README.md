@@ -130,7 +130,7 @@ The response has the shape `{ total, data, pagination }` where `pagination` is a
 
 At the repository layer, pagination is provided by `findWherePagedSorted()` and `paginate()` in [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts).
 
-See [pagination.md](pagination.md) for background on why paging matters, the shared type definitions (`ApiSearchRequest`, `ApiResponsePaged`, `Pagination`), and client-side examples for walking through pages of results.
+See [pagination.md](pagination.md) for background on why paging matters, the shared type definitions (`ApiSearchRequest`, `ApiResponse`, `Pagination`), and client-side examples for walking through pages of results.
 
 ## Search
 

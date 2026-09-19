@@ -119,7 +119,7 @@ describe("Pagination Tests", () => {
       expect(page1.data[0].countryId).not.toBe(page2.data[0].countryId);
     });
 
-    it("paginate method returns standard ApiResponsePaged structure", async () => {
+    it("paginate method returns standard ApiResponse structure", async () => {
       const response = await countryRepo.paginate(
         {},
         1,

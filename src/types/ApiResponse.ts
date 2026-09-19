@@ -1,8 +1,9 @@
-export interface ApiResponse<T> {
-  success?: boolean;
+import { Pagination } from "./Pagination";
+
+export default interface ApiResponse<T> {
+  success: boolean;
   message?: string;
   data?: T;
   status?: number;
+  pagination?: Pagination;
 }
-
-export default ApiResponse;

@@ -5,7 +5,7 @@ import {
   UpsertOptions,
 } from "@mikro-orm/core";
 import { Pagination } from "../../types/Pagination";
-import type ApiResponsePaged from "../../types/ApiResponsePaged";
+import type ApiResponse from "../../types/ApiResponse";
 
 /**
  * @summary Port interface that encapsulates repositories for entities with
@@ -46,7 +46,7 @@ export interface IBaseRepository<M> {
   ): Promise<{ total: number; data: M[]; pagination: Pagination }>;
 
   /**
-   * Paginate query returning ApiResponsePaged structure
+   * Paginate query returning ApiResponse structure
    */
   paginate(
     criteria: FilterQuery<M>,
@@ -54,7 +54,7 @@ export interface IBaseRepository<M> {
     pageSize?: number,
     orderBy?: keyof M | string,
     orderDesc?: boolean | string
-  ): Promise<ApiResponsePaged<M[]>>;
+  ): Promise<ApiResponse<M[]>>;
 
   /**
    * Search records by a property value with pagination and sorting
