@@ -12,6 +12,7 @@ import MikroOrmBaseRepository from "./db/repositories/MikroOrmBaseRepository";
 import Continent from "./db/models/Continent";
 import Country from "./db/models/Country";
 import { PostgreSqlDriver } from "@mikro-orm/postgresql";
+import type ApiSearchRequest from "./types/ApiSearchRequest";
 
 const app: Express = express();
 const PORT = process.env.PORT || 5001;
@@ -19,6 +20,7 @@ const HOST = process.env.HOST || "localhost";
 
 // Setup app
 app.use(cors());
+app.use(express.json());
 app.use((req, res, next) => {
   if (db) {
     RequestContext.create(db.em, next);
@@ -109,6 +111,28 @@ app.get(
       });
   }
 );
+
+app.post("/countries/search", async (req: Request, res: Response) => {
+  const { searchTerm, pageNumber, pageSize, sortBy, sortByDirection } =
+    req.body as ApiSearchRequest;
+
+  if (!searchTerm) {
+    return res.status(400).json({
+      message: "searchTerm is required in the request body",
+    });
+  }
+
+  const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
+  const results = await repoCountries.search(
+    "countryName",
+    searchTerm,
+    sortBy ?? "countryName",
+    sortByDirection ?? "ASC",
+    pageSize ?? 10,
+    pageNumber ?? 1
+  );
+  return res.json(results);
+});
 
 app.get("/country/:countryCode", async (req: Request, res: Response) => {
   let countryCode = req.params.countryCode;

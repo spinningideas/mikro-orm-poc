@@ -8,9 +8,10 @@ This code uses the following libraries:
 - [typescript](https://www.typescriptlang.org/)
 - [express](https://expressjs.com/)
 - [postgresql](https://www.postgresql.org/)
-- [cypress](https://www.cypress.io/) - testing
+- [vitest](https://vitest.dev/) - testing
+- [supertest](https://github.com/ladjs/supertest) - HTTP assertions for API tests
 
-This code uses MikroORM v6.4 which provides first-class TypeScript support with decorators.
+This code uses MikroORM v7 which provides first-class TypeScript support with decorators.
 
 This proof of concept uses a repository pattern to access data from the database and uses [express](https://expressjs.com/).
 
@@ -58,7 +59,7 @@ Run the following command to create the database schema:
 
 ### 5) Populate database with data using MikroORM seeders
 
-See `src/seeders/runSeeders.ts`
+See `src/db/seeders/seed.ts`
 
 Run the following command to seed the database:
 
@@ -66,7 +67,7 @@ Run the following command to seed the database:
 
 ### 6) Run the application
 
-The application is configured to use nodemon to monitor for file changes and you can run command to start the application using it. You will see console information with url and port.
+The application is configured to use ts-node-dev to monitor for file changes and you can run command to start the application using it. You will see console information with url and port.
 
 1. `npm run dev`
 
@@ -87,21 +88,59 @@ NOTE: You can also run and debug the application if using vscode via the launch.
 
 Use the client of your choice to run the requests to see api data and responses after importing the collection in the "postman" folder
 
-#### 7.3 - Run the tests AFTER first starting the app via "npm start"
+#### 7.3 - Run the tests
 
-Open a new terminal and use the test runner to run the tests.
+The tests use [vitest](https://vitest.dev/) with [supertest](https://github.com/ladjs/supertest) and live in the `tests` folder (`api.test.ts`, `pagination.test.ts`, `search.test.ts`). They run migrations and seeders against the database configured in `.env`, so the PostgreSQL server must be running — the express app does NOT need to be started first.
 
-When test runner launches chose end2end test and Electron then run the tests as you wish to see the API that is produced by express and MikroORM.
+Run the full test suite once:
 
 ```
 npm run test
 ```
 
-And then run
+Or run vitest in watch mode:
 
 ```
-npm run cypress:run
+npm run test:watch
 ```
+
+## Pagination
+
+Countries can be retrieved a page at a time via:
+
+```
+GET /countries/:continentCode/:pageNumber/:pageSize/:orderBy/:orderDesc
+```
+
+Example: `GET /countries/NA/1/10/countryName/DESC`
+
+The response has the shape `{ total, data, pagination }` where `pagination` is a [Pagination](src/types/Pagination.ts) object containing `totalResults`, `totalPages`, `pageSize`, `pageNumber`, `resultsExist`, `hasPreviousPage` and `hasNextPage`.
+
+At the repository layer, pagination is provided by `findWherePagedSorted()` and `paginate()` in [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts).
+
+See [pagination.md](pagination.md) for background on why paging matters, the shared type definitions (`ApiSearchRequest`, `ApiResponsePaged`, `Pagination`), and client-side examples for walking through pages of results.
+
+## Search
+
+Countries can be searched by name via a POST endpoint that accepts an [ApiSearchRequest](src/types/ApiSearchRequest.ts) JSON body:
+
+```
+POST /countries/search
+```
+
+```json
+{
+  "searchTerm": "United",
+  "pageNumber": 1,
+  "pageSize": 10,
+  "sortBy": "countryName",
+  "sortByDirection": "ASC"
+}
+```
+
+The search performs a case-insensitive substring match (`$ilike`) on `countryName` and returns the same paged response shape `{ total, data, pagination }` described above. `pageNumber`, `pageSize`, `sortBy` and `sortByDirection` are optional.
+
+At the repository layer, search is provided by `search()` in [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts), which accepts the field name, search term, and optional sort/pagination arguments.
 
 ### 8 Inspiration and Read More
 
