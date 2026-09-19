@@ -5,7 +5,9 @@ const runMigrations = async (orm?: MikroORM): Promise<boolean> => {
   try {
     console.log(`Running migrations in folder`);
 
-    await orm.getMigrator().up();
+    if (orm) {
+      await orm.migrator.up();
+    }
 
     return Promise.resolve(true);
   } catch (e) {

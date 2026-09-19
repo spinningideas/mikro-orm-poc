@@ -1,8 +1,11 @@
-import { Entity, Property, PrimaryKey, Unique } from "@mikro-orm/core";
+import { Entity, Property, PrimaryKey, Unique } from "@mikro-orm/decorators/legacy";
+import { PrimaryKeyProp } from "@mikro-orm/core";
 import { v4 } from "uuid";
 
 @Entity({ tableName: "continents", schema: "public" })
 export class Continent {
+  [PrimaryKeyProp]?: 'continentId';
+
   @PrimaryKey()
   @Property({ fieldName: "continent_id" })
   continentId: string = v4();

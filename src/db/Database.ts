@@ -9,7 +9,6 @@ export class Database {
     if (!this.orm) {
       try {
         this.orm = await MikroORM.init<PostgreSqlDriver>(config);
-        await this.orm.discoverEntities();
       } catch (err: any) {
         console.log("Error initializing database: ", err.message);
         throw err;
@@ -18,7 +17,7 @@ export class Database {
     return this.orm;
   }
 
-  async close(): Promise<void> {
+  static async close(): Promise<void> {
     if (Database.orm) {
       await Database.orm.close();
     }

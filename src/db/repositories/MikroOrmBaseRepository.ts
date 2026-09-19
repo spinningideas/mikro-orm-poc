@@ -2,6 +2,7 @@ import {
   AnyEntity,
   EntityData,
   EntityManager,
+  EntityName,
   EntityRepository,
   FilterQuery,
   FindOptions,
@@ -10,26 +11,21 @@ import {
   RequiredEntityData,
   UpsertOptions,
 } from "@mikro-orm/core";
+import { Pagination } from "../../types/Pagination";
+import type ApiResponsePaged from "../../types/ApiResponsePaged";
 
 export class MikroOrmBaseRepository<
-  T extends AnyEntity<T>
+  T extends object
 > extends EntityRepository<T> {
-  constructor(private readonly orm: MikroORM, entity?: new () => T) {
-    super(orm.em, entity);
+  constructor(private readonly orm: MikroORM, entityName: EntityName<T>) {
+    super(orm.em, entityName);
   }
 
   /**
    * Clear all records from the entity table
    */
   async clear(): Promise<void> {
-    await this.nativeDelete({});
-  }
-
-  /**
-   * Get all records in the table
-   */
-  async findAll(): Promise<T[]> {
-    return this.findAll();
+    await this.nativeDelete({} as FilterQuery<T>);
   }
 
   /**
@@ -40,35 +36,118 @@ export class MikroOrmBaseRepository<
   }
 
   /**
-   * Find records with pagination and sorting
+   * Find records with pagination and sorting, including Pagination object
    */
   async findWherePagedSorted(
     criteria: FilterQuery<T>,
-    pageNumber: number,
-    pageSize: number,
-    orderBy: keyof T,
-    orderDesc: boolean | string
-  ): Promise<{ total: number; data: T[] }> {
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    orderBy?: keyof T,
+    orderDesc: boolean | string = "ASC"
+  ): Promise<{ total: number; data: T[]; pagination: Pagination }> {
     if (pageNumber <= 0) {
       pageNumber = 1;
     }
+    if (pageSize <= 0) {
+      pageSize = 10;
+    }
 
     const offset = (pageNumber - 1) * pageSize;
-    const orderDirection =
+    const isDesc =
       orderDesc === true ||
       orderDesc.toString().toLowerCase() === "true" ||
-      orderDesc.toString().toLowerCase() === "desc"
-        ? "DESC"
-        : "ASC";
+      orderDesc.toString().toLowerCase() === "desc";
+    const orderDirection = isDesc ? "DESC" : "ASC";
 
     const options: FindOptions<T> = {
       limit: pageSize,
       offset,
-      orderBy: { [orderBy]: orderDirection } as QueryOrderMap<T>,
     };
 
+    if (orderBy) {
+      options.orderBy = { [orderBy]: orderDirection } as QueryOrderMap<T>;
+    }
+
     const [data, total] = await this.findAndCount(criteria, options);
-    return { total, data };
+    const pagination = new Pagination(pageSize, pageNumber, total);
+    return { total, data, pagination };
+  }
+
+  /**
+   * Paginate query returning standard ApiResponsePaged structure
+   */
+  async paginate(
+    criteria: FilterQuery<T>,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    orderBy?: keyof T,
+    orderDesc: boolean | string = "ASC"
+  ): Promise<ApiResponsePaged<T[]>> {
+    const { data, pagination } = await this.findWherePagedSorted(
+      criteria,
+      pageNumber,
+      pageSize,
+      orderBy,
+      orderDesc
+    );
+    return {
+      success: true,
+      status: 200,
+      data,
+      pagination,
+    };
+  }
+
+  /**
+   * Search records by a property value with pagination and sorting
+   * @param parameterName The field name to search on
+   * @param parameterValue The search term / substring
+   * @param sortBy The field to sort by (optional)
+   * @param order Sort order (DESC / ASC / true / false / 1 / -1) (optional, default ASC)
+   * @param pageSize Number of records per page (optional, default 10)
+   * @param pageNumber 1-based page number (optional, default 1)
+   */
+  async search(
+    parameterName: keyof T | string,
+    parameterValue: string,
+    sortBy?: keyof T | string,
+    order: boolean | string | number = "ASC",
+    pageSize: number = 10,
+    pageNumber: number = 1
+  ): Promise<{ total: number; data: T[]; pagination: Pagination }> {
+    if (pageNumber <= 0) {
+      pageNumber = 1;
+    }
+    if (pageSize <= 0) {
+      pageSize = 10;
+    }
+
+    const offset = (pageNumber - 1) * pageSize;
+    const isDesc =
+      order === true ||
+      order === -1 ||
+      order === "desc" ||
+      order === "DESC" ||
+      order.toString().toLowerCase() === "true" ||
+      order.toString().toLowerCase() === "desc";
+    const orderDirection = isDesc ? "DESC" : "ASC";
+
+    const criteria = {
+      [parameterName]: { $ilike: `%${parameterValue}%` },
+    } as FilterQuery<T>;
+
+    const options: FindOptions<T> = {
+      limit: pageSize,
+      offset,
+    };
+
+    if (sortBy) {
+      options.orderBy = { [sortBy]: orderDirection } as QueryOrderMap<T>;
+    }
+
+    const [data, total] = await this.findAndCount(criteria, options);
+    const pagination = new Pagination(pageSize, pageNumber, total);
+    return { total, data, pagination };
   }
 
   /**
@@ -81,12 +160,9 @@ export class MikroOrmBaseRepository<
   /**
    * Create a new record
    */
-  async createNew<Convert extends boolean = false>(
-    data: EntityData<T>,
-    options?: { convert?: Convert; partial: true; manual?: true }
-  ): Promise<T> {
-    const newEntity = super.create(data, options);
-    await this.orm.em.persistAndFlush(newEntity);
+  async createNew(data: RequiredEntityData<T>): Promise<T> {
+    const newEntity = super.create(data);
+    await this.orm.em.persist(newEntity).flush();
     return newEntity;
   }
 
@@ -107,13 +183,13 @@ export class MikroOrmBaseRepository<
       const entity = this.create({} as RequiredEntityData<T>);
       // Then assign the data to it
       if (entityOrData) {
-        this.orm.em.assign(entity, entityOrData as T);
+        this.orm.em.assign(entity, entityOrData as any);
       }
-      await this.orm.em.persistAndFlush(entity);
+      await this.orm.em.persist(entity).flush();
       return entity;
     } else {
       if (entityOrData) {
-        this.orm.em.assign(existingEntity, entityOrData as T);
+        this.orm.em.assign(existingEntity, entityOrData as any);
         await this.orm.em.flush();
       }
       return existingEntity;
@@ -133,7 +209,7 @@ export class MikroOrmBaseRepository<
       throw new Error("Entity not found");
     }
 
-    this.orm.em.assign(existingEntity, entity as T);
+    this.orm.em.assign(existingEntity, entity as any);
     await this.orm.em.flush();
     return existingEntity;
   }

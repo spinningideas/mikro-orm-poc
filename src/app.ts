@@ -3,7 +3,7 @@ dotenv.config();
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
 // database setup/mgmt
-import { MikroORM } from "@mikro-orm/core";
+import { MikroORM, RequestContext } from "@mikro-orm/core";
 import Database from "./db/Database";
 import runMigrations from "./db/migrations/runMigrations";
 import runSeeders from "./db/seeders/runSeeders";
@@ -19,28 +19,34 @@ const HOST = process.env.HOST || "localhost";
 
 // Setup app
 app.use(cors());
+app.use((req, res, next) => {
+  if (db) {
+    RequestContext.create(db.em, next);
+  } else {
+    next();
+  }
+});
 
 let db: MikroORM<PostgreSqlDriver>;
 
 // Setup routes
 //==continents=======================
 app.get("/continents", async (req: Request, res: Response) => {
-  const repo = new MikroOrmBaseRepository<Continent>(db);
-  return await repo.findAll().then((continents) => {
-    res.json(continents);
-  });
+  const repo = new MikroOrmBaseRepository<Continent>(db, Continent);
+  const continents = await repo.findAll();
+  res.json(continents);
 });
 //==countries==============================
 app.get("/countries/:continentCode", async (req: Request, res: Response) => {
   let continentCode = req.params.continentCode;
-  const repoContinents = new MikroOrmBaseRepository<Continent>(db);
-  const repoCountries = new MikroOrmBaseRepository<Country>(db);
+  const repoContinents = new MikroOrmBaseRepository<Continent>(db, Continent);
+  const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
 
   const continent = await repoContinents.findOneWhere({
     continentCode: continentCode,
   });
   if (!continent) {
-    res.status(404).json({
+    return res.status(404).json({
       message: "Continent not found with continentCode: " + continentCode,
     });
   }
@@ -69,12 +75,17 @@ app.get(
     const { orderBy } = req.params;
     const { orderDesc } = req.params;
 
-    const repoContinents = new MikroOrmBaseRepository<Continent>(db);
-    const repoCountries = new MikroOrmBaseRepository<Country>(db);
+    const repoContinents = new MikroOrmBaseRepository<Continent>(db, Continent);
+    const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
 
     const continent = await repoContinents.findOneWhere({
       continentCode: continentCode,
     });
+    if (!continent) {
+      return res.status(404).json({
+        message: "Continent not found with continentCode: " + continentCode,
+      });
+    }
 
     const currentPageNumber = pageNumber as unknown as number;
     const currentPageSize = pageSize as unknown as number;
@@ -85,7 +96,7 @@ app.get(
         currentPageNumber,
         currentPageSize,
         orderBy as keyof Country,
-        orderDesc
+        orderDesc as string
       )
       .then((results) => {
         if (!results) {
@@ -101,7 +112,7 @@ app.get(
 
 app.get("/country/:countryCode", async (req: Request, res: Response) => {
   let countryCode = req.params.countryCode;
-  const repoCountry = new MikroOrmBaseRepository<Country>(db);
+  const repoCountry = new MikroOrmBaseRepository<Country>(db, Country);
   return await repoCountry
     .findOneWhere({ countryCode: countryCode })
     .then((results) => {
@@ -136,10 +147,15 @@ async function configureDatabase() {
   }
 }
 
-configureDatabase().then((result) => {
-  app.listen(PORT, () => {
-    console.log("db setup ok?:", result);
+if (process.env.NODE_ENV !== "test") {
+  configureDatabase().then((result) => {
+    app.listen(PORT, () => {
+      console.log("db setup ok?:", result);
 
-    console.log(`Server running at ${HOST}:${PORT} `);
+      console.log(`Server running at ${HOST}:${PORT} `);
+    });
   });
-});
+}
+
+export { app, configureDatabase };
+export default app;

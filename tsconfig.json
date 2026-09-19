@@ -17,7 +17,7 @@
     "declaration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": ["cypress", "node"],
+    "types": ["node"],
     "skipLibCheck": true
   },
   "compileOnSave": true,

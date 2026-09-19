@@ -68,7 +68,12 @@ Run the following command to seed the database:
 
 The application is configured to use nodemon to monitor for file changes and you can run command to start the application using it. You will see console information with url and port.
 
-`npm run start`
+1. `npm run dev`
+
+OR
+
+1. `npm run build`
+2. `npm run start`
 
 NOTE: You can also run and debug the application if using vscode via the launch.json profile and debugging capabilities: https://code.visualstudio.com/docs/editor/debugging
 
@@ -76,22 +81,20 @@ NOTE: You can also run and debug the application if using vscode via the launch.
 
 #### 7.1 - Get a client
 
-1. https://www.thunderclient.com/
-
-2. https://www.getpostman.com - Download and install https://www.getpostman.com
+- https://www.getpostman.com - Download and install https://www.getpostman.com
 
 #### 7.2 - Import "postman" collection and run requests
 
 Use the client of your choice to run the requests to see api data and responses after importing the collection in the "postman" folder
 
-#### 7.3 - Run the cypress tests AFTER first starting the app via "npm start"
+#### 7.3 - Run the tests AFTER first starting the app via "npm start"
 
-Open a new terminal and use the cypress test runner to run the tests.
+Open a new terminal and use the test runner to run the tests.
 
-When cypress launches chose end2end test and Electron then run the tests as you wish to see the API that is produced by express and MikroORM.
+When test runner launches chose end2end test and Electron then run the tests as you wish to see the API that is produced by express and MikroORM.
 
 ```
-npm run cypress:open
+npm run test
 ```
 
 And then run
@@ -105,4 +108,4 @@ npm run cypress:run
 - https://github.com/mikro-orm/mikro-orm
 - https://mikro-orm.io/
 - https://mikro-orm.io/docs/repositories
-- https://mikro-orm.io/docs/migrations  
+- https://mikro-orm.io/docs/migrations

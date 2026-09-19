@@ -1,6 +1,8 @@
 import { Criteria } from "db/repositories/Criteria";
 import RepositoryResult from "db/repositories/RepositoryResult";
 import RepositoryResultPaged from "db/repositories/RepositoryResultPaged";
+import { Pagination } from "../../types/Pagination";
+import type ApiResponsePaged from "../../types/ApiResponsePaged";
 
 /**
  * @summary Interface that encapsulates repositories for entities with
@@ -41,16 +43,47 @@ export interface IBaseRepository<M> {
     orderDesc: boolean
   ): Promise<RepositoryResultPaged<M, unknown>>;
 
+  /**
+   * Given criteria returns paged set of items with sorting and full Pagination metadata
+   */
+  findWherePagedSorted(
+    criteria: Criteria | any,
+    pageNumber: number,
+    pageSize: number,
+    orderBy?: keyof M | string,
+    orderDesc?: boolean | string
+  ): Promise<{ total: number; data: M[]; pagination: Pagination }>;
+
+  /**
+   * Paginate query returning ApiResponsePaged structure
+   */
+  paginate(
+    criteria: Criteria | any,
+    pageNumber: number,
+    pageSize: number,
+    orderBy?: keyof M | string,
+    orderDesc?: boolean | string
+  ): Promise<ApiResponsePaged<M[]>>;
+
   findAll(): RepositoryResult<M[]>;
   countWhere(criteria: Criteria): RepositoryResult<number>;
-  // search(
-  //   parameterName: string,
-  //   parameterValue: string,
-  //   sortBy: string,
-  //   order: number,
-  //   pageSize: number,
-  //   pageNumber: number
-  // ): RepositoryResult<M[]>;
+  /**
+   * Search records by a property value with pagination and sorting
+   * @param parameterName The field name to search on
+   * @param parameterValue The search term / substring
+   * @param sortBy The field to sort by (optional)
+   * @param order Sort order (DESC / ASC / true / false / 1 / -1) (optional)
+   * @param pageSize Number of records per page (optional)
+   * @param pageNumber 1-based page number (optional)
+   */
+  search(
+    parameterName: keyof M | string,
+    parameterValue: string,
+    sortBy?: keyof M | string,
+    order?: number | string | boolean,
+    pageSize?: number,
+    pageNumber?: number
+  ): Promise<{ total: number; data: M[]; pagination: Pagination }>;
   /**
    * Persists a new instance given model to database.
    * Returns the created instance of the model in the response "data".
