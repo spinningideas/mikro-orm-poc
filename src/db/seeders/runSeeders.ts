@@ -1,9 +1,9 @@
 // data
-import continentData from "./data/continentData";
-import countryData from "./data/countryData";
+import continentData from "@/db/seeders/data/continentData";
+import countryData from "@/db/seeders/data/countryData";
 // models
-import { Continent } from "../models/Continent";
-import { Country } from "../models/Country";
+import { Continent } from "@/db/models/Continent";
+import { Country } from "@/db/models/Country";
 // Database ORM specific feature to persist data
 import { MikroORM, EntityManager } from "@mikro-orm/core";
 

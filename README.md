@@ -15,6 +15,10 @@ This code uses MikroORM v7 which provides first-class TypeScript support with de
 
 This proof of concept uses a repository pattern to access data from the database and uses [express](https://expressjs.com/).
 
+Requests flow through four layers: express routes ([src/app.ts](src/app.ts)) call a service, [GeographyDataService](src/services/GeographyDataService.ts), which resolves repositories through an [IRepositoryProvider](src/db/repositories/IRepositoryProvider.ts) - a composition root supplied by [getRepositoryProvider()](src/db/repositories/provider.ts) and injected into the service at startup. The default provider, [MikroOrmRepositoryProvider](src/db/repositories/MikroOrmRepositoryProvider.ts), lazily constructs [CountryRepository](src/db/repositories/CountryRepository.ts) / [MikroOrmBaseRepository](src/db/repositories/MikroOrmBaseRepository.ts) behind the ORM-neutral [IBaseRepository](src/db/repositories/IBaseRepository.ts) port, so repositories always resolve against the request-scoped EntityManager. That EntityManager implements the **unit of work** pattern (tracking changes and flushing them in a single transaction) along with the **identity map**. The `RequestContext` middleware in `app.ts` gives each HTTP request its own scoped EntityManager, so every request gets an isolated unit of work.
+
+The provider is swappable: set `REPOSITORY_DRIVER=memory` (or call `setRepositoryProvider()` in tests) to use [InMemoryRepositoryProvider](src/db/repositories/InMemoryRepositoryProvider.ts) instead of MikroORM. Repositories also accept an ORM-neutral criteria DSL defined in [Criteria.ts](src/db/repositories/Criteria.ts) (`$eq`, `$in`, `$gt`, `$ilike`, `$and`/`$or`/`$not`), which `MikroOrmBaseRepository` translates into MikroORM `FilterQuery` objects - so services and tests never reference ORM types directly.
+
 ## Get Started
 
 To get started perform the following steps:
@@ -87,6 +91,8 @@ OR
 2. `npm run start`
 
 By default the app listens on http://localhost:5001 (override with the `PORT` and `HOST` env vars). On startup it also runs database migrations and seeders automatically, skipping seeding when data already exists.
+
+Note on imports: source files use the `@/` path alias mapped to `src/` in [tsconfig.json](tsconfig.json), with `tsconfig-paths` for dev-mode resolution, `tsc-alias` rewriting emitted build output, and [vitest.config.ts](vitest.config.ts) resolving the alias in tests.
 
 NOTE: You can also run and debug the application if using vscode via the launch.json profile and debugging capabilities: https://code.visualstudio.com/docs/editor/debugging
 
@@ -161,3 +167,7 @@ At the repository layer, search is provided by `search()` in [MikroOrmBaseReposi
 - https://mikro-orm.io/
 - https://mikro-orm.io/docs/repositories
 - https://mikro-orm.io/docs/migrations
+
+## Repository Pattern & Dependency Injection
+
+For a deeper look at how the repository pattern is applied in this codebase (`IBaseRepository` port, `CriteriaShape` DSL, `MikroOrmBaseRepository` adapter, `CountryRepository` domain repo, `IRepositoryProvider` / `getRepositoryProvider()` composition root, `GeographyDataService`), why it's useful, and how dependency injection fits with MikroORM's request-scoped EntityManager - including options for wiring repositories into services with or without a DI library - see [mikro-orm-repo-pattern.md](mikro-orm-repo-pattern.md).

@@ -2,9 +2,9 @@ import { defineConfig } from "@mikro-orm/postgresql";
 import { Migrator, TSMigrationGenerator } from "@mikro-orm/migrations";
 import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
 import dotenv from "dotenv";
-
-import Continent from "./db/models/Continent";
-import Country from "./db/models/Country";
+// db models
+import Continent from "@/db/models/Continent";
+import Country from "@/db/models/Country";
 
 dotenv.config();
 

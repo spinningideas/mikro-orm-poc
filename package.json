@@ -5,9 +5,9 @@
   "main": "dist/app.js",
   "scripts": {
     "setup": "npm run schema:create && npm run seed:run && npm run dev",
-    "dev": "ts-node-dev --respawn src/app.ts",
-    "dev:debug": "ts-node-dev --inspect=localhost:5001 src/app.ts",
-    "build": "tsc",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn src/app.ts",
+    "dev:debug": "ts-node-dev -r tsconfig-paths/register --inspect=localhost:5001 src/app.ts",
+    "build": "tsc && tsc-alias",
     "start": "node dist/app.js",
     "db:migrations:deploy": "npx mikro-orm migration:up",
     "db:seeders:deploy": "tsx src/db/seeders/seed.ts",
@@ -44,6 +44,8 @@
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.9.5",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.1"

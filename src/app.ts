@@ -3,17 +3,19 @@ dotenv.config();
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
 // database setup/mgmt
-import { MikroORM, RequestContext } from "@mikro-orm/core";
-import Database from "./db/Database";
-import runMigrations from "./db/migrations/runMigrations";
-import runSeeders from "./db/seeders/runSeeders";
-import MikroOrmBaseRepository from "./db/repositories/MikroOrmBaseRepository";
-import CountryRepository from "./db/repositories/CountryRepository";
-// db models
-import Continent from "./db/models/Continent";
-import Country from "./db/models/Country";
 import { PostgreSqlDriver } from "@mikro-orm/postgresql";
-import type ApiSearchRequest from "./types/ApiSearchRequest";
+import { MikroORM, RequestContext } from "@mikro-orm/core";
+import Database from "@/db/Database";
+import runMigrations from "@/db/migrations/runMigrations";
+import runSeeders from "@/db/seeders/runSeeders";
+import { getRepositoryProvider } from "@/db/repositories/providers/provider";
+import type { IRepositoryProvider } from "@/db/repositories/providers/IRepositoryProvider";
+// services
+import GeographyDataService from "@/services/GeographyDataService";
+// db models
+import Country from "@/db/models/Country";
+// service models
+import type ApiSearchRequest from "@/types/ApiSearchRequest";
 
 const app: Express = express();
 const PORT = process.env.PORT || 5001;
@@ -31,128 +33,87 @@ app.use((req, res, next) => {
 });
 
 let db: MikroORM<PostgreSqlDriver>;
+let repositoryProvider: IRepositoryProvider;
 
 // Setup routes
 //==continents=======================
 app.get("/continents", async (req: Request, res: Response) => {
-  const repo = new MikroOrmBaseRepository<Continent>(db, Continent);
-  const continents = await repo.findAll();
+  const geographyDataService = new GeographyDataService(repositoryProvider);
+  const continents = await geographyDataService.getContinents();
   res.json(continents);
 });
 //==countries==============================
 app.get("/countries/:continentCode", async (req: Request, res: Response) => {
-  let continentCode = req.params.continentCode;
-  const repoContinents = new MikroOrmBaseRepository<Continent>(db, Continent);
-  const repoCountries = new CountryRepository(db);
+  const continentCode = req.params.continentCode as string;
+  const geographyDataService = new GeographyDataService(repositoryProvider);
+  const countries = await geographyDataService.getCountriesByContinentCode(
+    continentCode
+  );
 
-  const continent = await repoContinents.findOneWhere({
-    continentCode: continentCode,
-  });
-  if (!continent) {
+  if (!countries) {
     return res.status(404).json({
       message: "Continent not found with continentCode: " + continentCode,
     });
   }
-
-  return await repoCountries
-    .findByContinentCode(continentCode as string)
-    .then((results) => {
-      if (!results) {
-        res.status(404).json({
-          message: "Countries not found with continentCode: " + continentCode,
-        });
-      } else {
-        res.json(results);
-      }
-    });
+  return res.json(countries);
 });
 
 app.get(
   "/countries/:continentCode/:pageNumber/:pageSize/:orderBy/:orderDesc",
   async (req: Request, res: Response) => {
-    const { continentCode } = req.params;
+    const continentCode = req.params.continentCode as string;
     const { pageNumber } = req.params;
     const { pageSize } = req.params;
     const { orderBy } = req.params;
     const { orderDesc } = req.params;
 
-    const repoContinents = new MikroOrmBaseRepository<Continent>(db, Continent);
-    const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
-
-    const continent = await repoContinents.findOneWhere({
-      continentCode: continentCode,
-    });
-    if (!continent) {
-      return res.status(404).json({
-        message: "Continent not found with continentCode: " + continentCode,
-      });
-    }
-
+    const geographyDataService = new GeographyDataService(repositoryProvider);
     const currentPageNumber = pageNumber as unknown as number;
     const currentPageSize = pageSize as unknown as number;
 
-    return await repoCountries
-      .findWherePagedSorted(
-        { continentId: continent.continentId },
+    const results =
+      await geographyDataService.getCountriesByContinentCodePaged(
+        continentCode,
         currentPageNumber,
         currentPageSize,
         orderBy as keyof Country,
         orderDesc as string
-      )
-      .then((results) => {
-        if (!results) {
-          res.status(404).json({
-            message: "No countries found with continentCode: " + continentCode,
-          });
-        } else {
-          res.json(results);
-        }
+      );
+
+    if (!results) {
+      return res.status(404).json({
+        message: "Continent not found with continentCode: " + continentCode,
       });
+    }
+    return res.json(results);
   }
 );
 
 app.post("/countries/search", async (req: Request, res: Response) => {
-  const {
-    searchTerm,
-    searchField,
-    pageNumber,
-    pageSize,
-    sortBy,
-    sortByDirection,
-  } = req.body as ApiSearchRequest;
+  const searchRequest = req.body as ApiSearchRequest;
 
-  if (!searchTerm) {
+  if (!searchRequest.searchTerm) {
     return res.status(400).json({
       message: "searchTerm is required in the request body",
     });
   }
 
-  const repoCountries = new MikroOrmBaseRepository<Country>(db, Country);
-  const results = await repoCountries.search(
-    searchField?.length ? searchField : ["countryName"],
-    searchTerm,
-    sortBy ?? "countryName",
-    sortByDirection ?? "ASC",
-    pageSize ?? 10,
-    pageNumber ?? 1
-  );
+  const geographyDataService = new GeographyDataService(repositoryProvider);
+  const results = await geographyDataService.searchCountries(searchRequest);
   return res.json(results);
 });
 
 app.get("/country/:countryCode", async (req: Request, res: Response) => {
-  let countryCode = req.params.countryCode;
-  const repoCountry = new MikroOrmBaseRepository<Country>(db, Country);
-  return await repoCountry
-    .findOneWhere({ countryCode: countryCode })
-    .then((results) => {
-      if (!results) {
-        res.status(404).json({
-          message: "country not found with countryCode: " + countryCode,
-        });
-      } else {
-        res.json(results);
-      }
+  const countryCode = req.params.countryCode as string;
+  const geographyDataService = new GeographyDataService(repositoryProvider);
+  const country = await geographyDataService.getCountryByCode(countryCode);
+
+  if (!country) {
+    return res.status(404).json({
+      message: "country not found with countryCode: " + countryCode,
     });
+  }
+  return res.json(country);
 });
 
 //==app start AFTER DB setup==============================
@@ -161,6 +122,7 @@ async function configureDatabase() {
     let seedersRunSuccessfully = false;
     console.log(`Initializing database`);
     db = await Database.init();
+    repositoryProvider = getRepositoryProvider();
     console.log(`Database initialized. Running database migrations`);
     const migrationsRun = await runMigrations(db);
     console.log("database migrations setup ok?:", migrationsRun);

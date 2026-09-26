@@ -7,7 +7,7 @@ import {
 } from "@mikro-orm/decorators/legacy";
 import { PrimaryKeyProp } from "@mikro-orm/core";
 import { v4 } from "uuid";
-import { Continent } from "./Continent";
+import { Continent } from "@/db/models/Continent";
 
 @Entity({ tableName: "countries", schema: "public" })
 export class Country {

@@ -1,4 +1,4 @@
-import { Pagination } from "./Pagination";
+import { Pagination } from "@/types/Pagination";
 
 export default interface ApiResponse<T> {
   success: boolean;

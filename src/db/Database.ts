@@ -1,6 +1,6 @@
 import { MikroORM, EntityManager } from "@mikro-orm/core";
 import { PostgreSqlDriver } from "@mikro-orm/postgresql";
-import config from "../mikro-orm.config";
+import config from "@/mikro-orm.config";
 
 export class Database {
   protected static orm: MikroORM<PostgreSqlDriver>;
@@ -23,15 +23,15 @@ export class Database {
     }
   }
 
-  getOrm(): MikroORM<PostgreSqlDriver> {
+  static getOrm(): MikroORM<PostgreSqlDriver> {
     return Database.orm;
   }
 
-  getEM(): EntityManager {
+  static getEM(): EntityManager {
     return Database.orm.em;
   }
 
-  getFork(): EntityManager {
+  static getFork(): EntityManager {
     return Database.orm.em.fork();
   }
 }

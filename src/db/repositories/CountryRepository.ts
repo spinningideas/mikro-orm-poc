@@ -1,6 +1,6 @@
 import { MikroORM } from "@mikro-orm/core";
-import Country from "../models/Country";
-import MikroOrmBaseRepository from "./MikroOrmBaseRepository";
+import Country from "@/db/models/Country";
+import MikroOrmBaseRepository from "@/db/repositories/mikro-orm/MikroOrmBaseRepository";
 
 /**
  * Repository for the countries table. Extends the base repository with

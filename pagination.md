@@ -98,7 +98,8 @@ The example below shows a typed fetch helper and a small set of calls demonstrat
 
 ```typescript
 // types.ts  (all definitions above combined)
-import type { ApiSearchRequest, ApiResponse } from "./types";
+import type ApiSearchRequest from "./types/ApiSearchRequest";
+import type ApiResponse from "./types/ApiResponse";
 
 // -------------------------------------------------------
 // Domain type for this example
@@ -211,8 +212,8 @@ console.log(`Fetched ${allProducts.length} products across all pages`);
 Below is a reference showing how a server would construct a properly shaped `ApiResponse` response (e.g. in an Express route handler):
 
 ```typescript
-import { Pagination } from "./types";
-import type { ApiResponse } from "./types";
+import { Pagination } from "./types/Pagination";
+import type ApiResponse from "./types/ApiResponse";
 
 // Simulated route handler
 app.post("/products/search", async (req, res) => {

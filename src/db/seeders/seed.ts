@@ -1,5 +1,5 @@
-import { Database } from "../Database";
-import runSeeders from "./runSeeders";
+import { Database } from "@/db/Database";
+import runSeeders from "@/db/seeders/runSeeders";
 
 async function seed(): Promise<boolean> {
   try {
